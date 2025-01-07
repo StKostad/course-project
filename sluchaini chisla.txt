@@ -1,0 +1,352 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>  // For rand() and srand()
+#include <ctime>    // For seeding srand()
+#include<cmath>
+#include <fstream>
+using namespace std;
+void savegame(){
+    
+}
+void quitgame(){
+    
+}
+void loadgame(){
+    
+}
+bool isNumber(const string& str) {
+    try {
+        stoi(str);  // Try converting the string to an integer
+        return true;     // If successful, it's a number
+    } catch (const invalid_argument& e) {
+        return false;    // If exception is thrown, it's not a valid number
+    } catch (const out_of_range& e) {
+        return false;    // If out-of-range exception is thrown, it's not a valid number
+    }
+}
+void printboard(vector<vector<int>> gameBoard, int N, int M, vector<vector<string>>Usedspaces, vector<int>positionplayera,vector<int>positionplayerb, double player1, double player2){
+    // Print the top border
+    cout << "+";
+    for(int i = 0 ;i<M; i++){
+        cout<<"----+";
+    }
+    cout<<endl;
+    // Loop through rows
+    for (int i = 0; i < N; i++) {
+        // Print the left border
+        cout << "|";
+
+        // Loop through columns
+        for (int j = 0; j < M; j++) {
+            if (Usedspaces[i][j][1]=='b') {
+                cout << "\033[44m";  // Apply blue background
+            } 
+            else if (Usedspaces[i][j][1]=='g'){
+                cout << "\033[42m"; // Apply green background
+            }
+            if((positionplayera[0]==i && positionplayera[1]==j) || (positionplayerb[0]==i && positionplayerb[1]==j)){
+                cout<<"\033[33m"<< " " <<Usedspaces[i][j][0]<< gameBoard[i][j] << " " << "\033[0m";
+            }
+            else{
+                cout<< " " <<Usedspaces[i][j][0]<< gameBoard[i][j] << " "<<"\033[0m";
+            }
+            cout << "|"; // Print the right border
+        }
+
+        cout << endl;
+
+        // Print the border between rows
+        cout << "+";
+        for(int i = 0 ;i<M; i++){
+            cout<<"----+";
+        }
+        cout<<endl;
+    }
+    cout<<"\t"<<"Blue:"<<round((player1+0.0000000001)*100.0)/100.0<<"\t"<<"Green:"<<round((player2+0.000001)*100.0)/100.0<<endl;
+}
+// Function to generate a random cell value
+int generateCell( int Multcap, vector<vector<string>>& Usedspaces, int v, int t) {
+    int random = rand() % 6; // Decide the type of cell: 0 = add, 1 = subtract, 2 = multiply
+    int value = (rand() % 10); 
+    switch (random) {
+        
+        case 0:
+        case 1:
+        return value;
+        case 2:
+        case 3:
+        if(!value){
+            return value;
+        }
+        Usedspaces[v][t][0]='-';
+        return value;
+        case 4:
+        if(Multcap<64){
+            value = value%3;
+        }
+        Usedspaces[v][t][0]='*';
+        return value;
+        case 5:
+        if(Multcap<64){
+            value=value%2+1;
+        }
+        while(!value){
+            value=(rand()%10);
+        }
+        Usedspaces[v][t][0]='/';
+        return value;
+    }
+    return 0; // Default case (shouldn't happen)
+}
+
+// Function to force at least one addition, one subtraction, and one multiplication by 2
+void ensureRequiredOperations(vector<vector<int>>& gameBoard, int N, int M, vector<vector<string>>& Usedspaces) {
+    // Randomly pick positions to enforce the required operations
+    int addRow = rand() % N, addCol = rand() % M;
+    int subRow = rand() % N, subCol = rand() % M;
+    int mulRow = rand() % N, mulCol = rand() % M;
+    int divRow = rand() % N, divCol = rand() % M;
+    // Ensure different positions for each type
+    while((subRow==0 && subCol==0) ||(subRow==N-1 && subCol==M-1)){
+        subRow = rand() % N;
+        subCol = rand() % M;
+    }
+    while ((addRow == subRow && addCol == subCol) || (addRow==0 && addCol==0) ||(addRow==N-1 && addCol==M-1)) {
+        addRow = rand() % N;
+        addCol = rand() % M;
+    }
+    while ((mulRow == addRow && mulCol == addCol) || (mulRow == subRow && mulCol == subCol) || (mulRow==0 && mulCol==0) ||(mulRow==N-1 && mulCol==M-1)) {
+        mulRow = rand() % N;
+        mulCol = rand() % M;
+    }
+    while ((divRow == mulRow && divCol == mulCol)||(divRow == addRow && divCol == addCol) || (divRow == subRow && divCol == subCol) || (divRow==0 && divCol==0) ||(divRow==N-1 && divCol==M-1)) {
+        divRow = rand() % N;
+        divCol = rand() % M;
+    }
+
+    // Set the required operations
+    gameBoard[0][0]=0;
+    Usedspaces[0][0][0]=' ';
+    gameBoard[N-1][M-1]=0;
+    Usedspaces[N-1][M-1][0]=' ';
+    int psnum=rand()%10;
+    int nnum=rand()%10;
+    if(!nnum){
+        gameBoard[subRow][subCol] = nnum;
+    }
+    else{
+        gameBoard[subRow][subCol] = nnum;
+        Usedspaces[subRow][subCol][0]='-';
+    }
+    gameBoard[addRow][addCol] = psnum;  // Example: Fixed addition
+    gameBoard[mulRow][mulCol] = 2; // Fixed multiplication by 2
+    Usedspaces[mulRow][mulCol][0]='*';
+    gameBoard[divRow][divCol] = 2;
+    Usedspaces[divRow][divCol][0]='/';
+}
+
+// Function to generate the game board
+void generateGameBoard(int N, int M, vector<vector<int>>& gameBoard, vector<vector<string>>& Usedspaces) {
+    
+    int Multcap = N*M;
+    // Seed random number generator
+    srand(static_cast<unsigned int>(time(0)));
+
+    // Populate the board with random values
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            gameBoard[i][j] = generateCell(Multcap, Usedspaces, i, j);
+        }
+    }
+
+    // Ensure at least one of each required operation
+    ensureRequiredOperations(gameBoard, N, M, Usedspaces);
+    
+}
+void Calc (double& score, char sign, int num){
+    if(sign==' '){
+        score+=num;
+    }
+    else if(sign=='-'){
+        score-=num;
+    }
+    else if(sign=='*'){
+        score*=num;
+    }
+    else if(sign=='/'){
+        score/=num;
+    }
+    else{
+        cout<<"Something went wrong!"<<endl;
+    }
+}
+bool IsEnd(vector<int>positionplayera, vector<vector<string>>Usedspaces, int N, int M){
+    int dx[] = {-1, -1, -1,  0,  0,  1,  1,  1};
+    int dy[] = {-1,  0,  1, -1,  1, -1,  0,  1};
+    for(int i=0; i<8; i++){
+        if(positionplayera[0]+dx[i]>N-1 || positionplayera[0]+dx[i]<0 || positionplayera[1]+dy[i]<0 || positionplayera[1]+dy[i]>M-1){
+            continue;
+        }
+        if(Usedspaces[positionplayera[0]+dx[i]][positionplayera[1]+dy[i]][1]!='b' && Usedspaces[positionplayera[0]+dx[i]][positionplayera[1]+dy[i]][1]!='g'){
+            return false;
+        }
+    }
+    return true;
+}
+string winner(double score1, double score2){
+    if(score1>score2){
+        return "THE WINNER IS BLUE!!!!";
+    }
+    else if(score2>score1){
+        return "THE WINNER IS GREEN!!!!";
+    }
+    else{
+        return "Looks like we have a draw :c";
+    }
+}
+void IllegalCoordinates(string& a, string& b){
+    cout<<"Illegal coordinates please enter legal ones!";
+    cin>> a;
+    while(true){
+        if(isNumber(a)){
+            break;
+        }
+        else if(a=="s"|| a=="S"){
+            savegame();
+        }
+        else if(a=="q" || a=="Q"){
+            quitgame();
+        }
+        else{
+            cout<<"Invalid character, enter a new one"<<endl;
+            cin>>a;
+        }
+    }
+    cin>>b;
+    while(true){
+        if(isNumber(b)){
+            break;
+        }
+        else if(b=="s"|| b=="S"){
+            savegame();
+        }
+        else if(b=="q" || b=="Q"){
+            quitgame();
+        }
+        else{
+            cout<<"Invalid character, enter a new one"<<endl;
+            cin>>b;
+        }
+    }
+    
+}
+bool IsForbidden(vector<vector<string>>Forbidden, string a, string b){
+    return Forbidden[stoi(a)][stoi(b)][1]=='b' || Forbidden[stoi(a)][stoi(b)][1]=='g';
+}
+void IsLegal(string& a, string& b, int N,int M, vector<int>position, vector<vector<string>>Forbidden){
+    while(!((stoi(a)>=0&&stoi(b)>=0)&&(stoi(a)<=N-1&&stoi(b)<=M-1))*(position[0]-stoi(a)<=1 && position[0]-stoi(a)>=-1)*(position[1]-stoi(b)<=1 && position[1]-stoi(b)>=-1)){
+        IllegalCoordinates(a,b);
+    }
+    if(IsForbidden(Forbidden,a,b)){
+        IllegalCoordinates(a,b);
+        IsLegal(a,b,N,M,position,Forbidden);
+    }
+}
+void mov(string a,string b, int N, int M, vector<int>& positionplayera, vector<vector<string>>Forbidden){
+    IsLegal(a,b,N,M,positionplayera, Forbidden);
+    positionplayera[0]=stoi(a);
+    positionplayera[1]=stoi(b);
+}
+void turns(int N, int M,vector<int>&positionplayera,vector<vector<string>>&Usedspaces,vector<vector<int>>&gameBoard,double& player1, char colour){
+    string a[2];
+    cin>>a[0];
+    while(true){
+        if(isNumber(a[0])){
+            break;
+        }
+        else if(a[0]=="s"|| a[0]=="S"){
+            savegame();
+        }
+        else if(a[0]=="q" || a[0]=="Q"){
+            quitgame();
+        }
+        else{
+            cout<<"Invalid character, enter a new one"<<endl;
+            cin>>a[0];
+        }
+    }
+    cin>>a[1];
+    while(true){
+        if(isNumber(a[1])){
+            break;
+        }
+        else if(a[1]=="s"|| a[1]=="S"){
+            savegame();
+        }
+        else if(a[1]=="q" || a[1]=="Q"){
+            quitgame();
+        }
+        else{
+            cout<<"Invalid character, enter a new one"<<endl;
+            cin>>a[1];
+        }
+    }
+    mov(a[0],a[1],N,M, positionplayera, Usedspaces);
+    system("clear");
+    Usedspaces[positionplayera[0]][positionplayera[1]][1]=colour;
+    Calc(player1,Usedspaces[positionplayera[0]][positionplayera[1]][0], gameBoard[positionplayera[0]][positionplayera[1]]);
+    
+}
+void gameplay(int N, int M,vector<int>positionplayera,vector<int>positionplayerb,vector<vector<string>>&Usedspaces,vector<vector<int>>&gameBoard,double player1,double player2){
+    while (true){
+        if(IsEnd(positionplayera,Usedspaces,N,M)) break;
+        turns(N,M,positionplayera,Usedspaces,gameBoard,player1,'b');
+        printboard(gameBoard, N,M, Usedspaces, positionplayera, positionplayerb, player1, player2);
+        if(IsEnd(positionplayerb,Usedspaces,N,M)) break;
+        turns(N,M,positionplayerb,Usedspaces,gameBoard,player2,'g');
+        printboard(gameBoard, N,M, Usedspaces, positionplayera, positionplayerb, player1, player2);
+    }
+    cout<<"\t"<<winner(player1, player2)<<endl;
+}
+void newgame(){
+    system("clear");
+    int N, M;
+    cout << "Enter the number of rows (N): ";
+    cin >> N;
+    cout << "Enter the number of columns (M): ";
+    cin >> M;
+    double player1 = 0;
+    double player2=0 ;
+    vector<vector<int>> gameBoard(N, vector<int>(M));
+    vector<vector<string>> Usedspaces(N, vector<string>(M,"  "));
+    Usedspaces[0][0][1]='b';
+    Usedspaces[N-1][M-1][1]='g';
+    system("clear");
+    generateGameBoard(N, M, gameBoard, Usedspaces);
+    vector<int> positionplayera(2);
+    vector<int> positionplayerb(2);
+    positionplayerb[0]=N-1;
+    positionplayerb[1]=M-1;
+    printboard(gameBoard, N,M, Usedspaces, positionplayera, positionplayerb, player1, player2);
+    gameplay( N,M, positionplayera, positionplayerb, Usedspaces, gameBoard,player1, player2);
+}
+int main() {
+    cout<<"New game <n>"<<endl;
+    if(0){
+        cout<<"Continue <c>"<<endl;
+    }
+    cout<<"Press <q> after the start of the game if you want to save and quit the game. Press <s> if you want to save and continue playing."<<endl;
+    char choice;
+    cin>>choice;
+    while(choice!='n'&&choice!='N'&&choice!='c'&&choice!='C'){
+        cout<<"Invalid command try again"<<endl;
+        cin>>choice;
+    }
+    if(choice=='n' || choice=='N'){
+        newgame();
+    }
+    else if((choice=='c'|| choice=='C')&& 0){
+        loadgame();
+    }
+    return 0;
+}
