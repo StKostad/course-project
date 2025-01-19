@@ -62,11 +62,14 @@ void quitgame(int N, int M, vector<vector<int>>gb, vector<vector<string>> us, ve
 }
 //Loads a saved game
 void loadgame() {
+    system("cls");
     string uni;
     ifstream inFile("savedgame.txt");
     if (inFile.is_open()) {
-        inFile >> N;
-        inFile >> M;
+        getline(inFile, uni);
+        N = stoi(uni);
+        getline(inFile, uni);
+        M = stoi(uni);
         getline(inFile, uni);
         int tile = 0;
         vector<vector<int>> gameb(N, vector<int>(M));
@@ -101,6 +104,7 @@ void loadgame() {
         for (char c : uni) {
             if (c == ',') {
                 us[tempN][tempM] = cre;
+                cre = "";
                 if (tempM + 1 == M) {
                     tempN++;
                     tempM = 0;
@@ -122,7 +126,6 @@ void loadgame() {
         inFile >> sc1;
         inFile >> sc2;
         inFile.close();
-        cout << "Game loaded";
         printboard(gameb, N, M, us, pa, pb, sc1, sc2);
         gameplay(N, M, pa, pb, us, gameb, sc1, sc2);
     }
@@ -185,20 +188,20 @@ int generateCell(int Multcap, vector<vector<string>>& Usedspaces, int v, int t) 
 
     case 0:
     case 1:
-        //return value;
+        return value;
     case 2:
     case 3:
-        //if (!value) {
-        //    return value;
-        //}
-        //Usedspaces[v][t][0] = '-';
-        //return value;
+        if (!value) {
+            return value;
+        }
+        Usedspaces[v][t][0] = '-';
+        return value;
     case 4:
-        /*if (Multcap < 64) {
+        if (Multcap < 64) {
             value = value % 3;
         }
         Usedspaces[v][t][0] = '*';
-        return value;*/
+        return value;
     case 5:
         if (Multcap < 64) {
             value = value % 2 + 1;
@@ -358,7 +361,7 @@ void IllegalCoordinates(string& a, string& b, vector<vector<int>>gb, vector<vect
             continue;
         }
     }
-    if (validator[0]=="s" || validator[0]=="S") {
+    if (validator[0] == "s" || validator[0] == "S") {
         IllegalCoordinates(a, b, gb, us, false);
     }
 
@@ -409,22 +412,26 @@ void turns(int N, int M, vector<int>& positionplayera, vector<vector<string>>& U
         }
         if (validator.size() > 2 || validator.size() == 0) {
             cout << "Illegal coordinates" << endl;
+            validator.clear();
             continue;
         }
         if (validator.size() == 1) {
             if (validator[0] == "s" || validator[0] == "S") {
                 savegame(N, M, gameBoard, Usedspaces, positionplayera, positionplayerb, player1, player2);
+                validator.clear();
             }
             else if (validator[0] == "q" || validator[0] == "Q") {
                 quitgame(N, M, gameBoard, Usedspaces, positionplayera, positionplayerb, player1, player2);
             }
             else {
                 cout << "Illegal coordinates" << endl;
+                validator.clear();
                 continue;
             }
         }
         else if (!(isNumber(validator[0]) && isNumber(validator[1]))) {
             cout << "Illegal coordinates" << endl;
+            validator.clear();
             continue;
         }
         else {
@@ -472,7 +479,7 @@ void newgame() {
         if (!command.empty()) {
             gridsize.push_back(command);
         }
-        if (gridsize.size()!=2) {
+        if (gridsize.size() != 2) {
             cout << "Invalid gridsize" << endl;
             continue;
         }
@@ -512,14 +519,14 @@ int main() {
     cout << "Press <q> after the start of the game if you want to save and quit the game. Press <s> if you want to save and continue playing." << endl;
     string choice;
     getline(cin, choice);
-    while (choice != "n" && choice != "N" && (isEmpty || (choice != "c" && choice != "C"))) {
+    while (choice != "n" && choice != "N" && (!isEmpty || (choice != "c" && choice != "C"))) {
         cout << "Invalid command try again" << endl;
         getline(cin, choice);
     }
     if (choice == "n" || choice == "N") {
         newgame();
     }
-    else {
+    else if(choice=="c"|| choice=="C"){
         loadgame();
     }
     return 0;
