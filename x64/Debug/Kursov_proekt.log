@@ -1,0 +1,6 @@
+﻿  Kursov_proekt.cpp
+C:\Users\HP\source\repos\Kursov_proekt\Kursov_proekt\Kursov_proekt.cpp(139,13): warning C4834: discarding return value of function with [[nodiscard]] attribute
+C:\Users\HP\source\repos\Kursov_proekt\Kursov_proekt\Kursov_proekt.cpp(142,36): warning C4101: 'e': unreferenced local variable
+C:\Users\HP\source\repos\Kursov_proekt\Kursov_proekt\Kursov_proekt.cpp(145,32): warning C4101: 'e': unreferenced local variable
+C:\Users\HP\source\repos\Kursov_proekt\Kursov_proekt\Kursov_proekt.cpp(522,47): warning C4551: function call missing argument list
+  Kursov_proekt.vcxproj -> C:\Users\HP\source\repos\Kursov_proekt\x64\Debug\Kursov_proekt.exe
